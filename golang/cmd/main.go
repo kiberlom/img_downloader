@@ -3,9 +3,9 @@ package main
 import (
 	"fmt"
 	"log"
-	"regexp"
 
 	"github.com/kiberlom/img_downloader/internal/geturl"
+	"github.com/kiberlom/img_downloader/internal/parslink"
 )
 
 func main() {
@@ -20,31 +20,22 @@ func main() {
 	// 	log.Fatal(err)
 	// }
 
-	//u := "https://img5.goodfon.ru"
-	u := "https://play.google.com/store/apps/details?id=com.goodfon.goodfon&rdid=com.goodfon.goodfon"
+	u := "https://img5.goodfon.ru"
+	//u := "https://play.google.com/store/apps/details?id=com.goodfon.goodfon&rdid=com.goodfon.goodfon"
+	// u := "https://coderoad.ru/1821811/%D0%9A%D0%B0%D0%BA-%D1%87%D0%B8%D1%82%D0%B0%D1%82%D1%8C-%D0%BF%D0%B8%D1%81%D0%B0%D1%82%D1%8C-%D0%B8%D0%B7-%D0%B2-%D1%84%D0%B0%D0%B9%D0%BB-%D1%81-%D0%BF%D0%BE%D0%BC%D0%BE%D1%89%D1%8C%D1%8E-Go"
 
 	html, err := geturl.GetHtml(u)
 	if err != nil {
 		log.Fatal(err)
 	}
 
-	fmt.Println(html)
+	//fmt.Println(html)
 
-	rxg, err := regexp.Compile(`(http|ftp|https)://([\w_-]+(?:(?:\.[\w_-]+)+))([\w.,@?^=%&:/~+#-]*[\w@?^=%&/~+#-])?`)
+	links, err := parslink.GetAllUrl(html)
 	if err != nil {
 		log.Fatal(err)
 	}
 
-	sr := rxg.FindAllString(html, -1)
-
-	f := make(map[string]struct{})
-	for _, v := range sr {
-		if _, ok := f[v]; !ok {
-			f[v] = struct{}{}
-		}
-	}
-	for i := range f {
-		fmt.Println(i)
-	}
+	fmt.Println(links)
 
 }

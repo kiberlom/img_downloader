@@ -1,0 +1,90 @@
+version: "3"
+
+services:
+ 
+  mysql:
+    tty: false
+    # restart: always
+    container_name: img_uploader_mysql
+    build:
+      context: ./db
+      dockerfile: Dockerfile
+    ports:
+      - "3306:3306"
+    # настройки БД
+    environment:
+      MYSQL_ROOT_PASSWORD: 84235220884
+      MYSQL_DATABASE: uploader
+      MYSQL_ROOT_HOST: "%"
+    volumes:
+      - ./data/mysql/data:/var/lib/mysql
+    networks:
+      mynet123:
+        ipv4_address: 172.2.1.2  
+
+  phpmyadmin:
+    tty: false
+    # restart: always
+    container_name: img_uploader_phpmyadmin
+    image: phpmyadmin:5.1.1
+    # ports:
+    #   - "3306:3306"
+    # настройки БД
+    ports:
+      - "8080:80"
+    environment:
+      PMA_ARBITRARY: 1
+      PMA_USER: root
+      PMA_PASSWORD: 84235220884
+      PMA_HOST: 172.2.1.2
+      PMA_PORT: 3306
+    networks:
+      mynet123:
+        ipv4_address: 172.2.1.3
+
+  postgres:
+    container_name: postgres_container
+    image: postgres
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+      PGDATA: /data/postgres
+    volumes:
+       - ./data/postgres:/data/postgres
+    ports:
+      - "5432:5432"
+    networks:
+      mynet123:
+        ipv4_address: 172.2.1.4
+
+  pgadmin:
+    tty: false
+    # restart: always
+    container_name: img_uploader_pgadmin
+    image: dpage/pgadmin4
+    # ports:
+    #   - "3306:3306"
+    # настройки БД
+    ports:
+      - "8081:80"
+    environment:
+      PGADMIN_DEFAULT_EMAIL: pgadmin4@pgadmin.org
+      PGADMIN_DEFAULT_PASSWORD: postgres
+      PGADMIN_CONFIG_SERVER_MODE: 'False'
+    volumes:
+      - ./data/pgadmin4:/var/lib/pgadmin
+    networks:
+      mynet123:
+        ipv4_address: 172.2.1.5
+  
+  
+
+# создание сети
+networks:
+  # название сети
+  mynet123:
+    driver: bridge #драйвер
+    ipam:
+      driver: default
+      config:
+        - subnet: 172.2.1.0/24
