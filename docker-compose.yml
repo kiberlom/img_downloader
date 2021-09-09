@@ -1,11 +1,33 @@
 version: "3"
 
 services:
+
+  golang:
+    tty: true
+    # restart: always
+    container_name: img_downloader_golang
+    build:
+      context: ./golang
+      dockerfile: ./Dockerfile
+    # ports:
+    #   - "3306:3306"
+    # настройки БД
+    # ports:
+    #   - "8000:8000"
+    environment:
+      MYSQL_USER: root
+      MYSQL_USER_PASSWORD: 84235220884
+      MYSQL_DATABASE: downloader
+      MYSQL_IP: 172.2.1.2
+      MYSQL_PORT: 3306      
+    networks:
+      img_downloader:
+        ipv4_address: 172.2.1.6
  
   mysql:
     tty: false
     # restart: always
-    container_name: img_uploader_mysql
+    container_name: img_downloader_mysql
     build:
       context: ./db
       dockerfile: Dockerfile
@@ -14,19 +36,19 @@ services:
     # настройки БД
     environment:
       MYSQL_ROOT_PASSWORD: 84235220884
-      MYSQL_DATABASE: uploader
+      MYSQL_DATABASE: downloader
       MYSQL_ROOT_HOST: "%"
     volumes:
       - ./data/mysql/data:/var/lib/mysql
     networks:
-      mynet123:
+      img_downloader:
         ipv4_address: 172.2.1.2  
 
   phpmyadmin:
     tty: false
     # restart: always
-    container_name: img_uploader_phpmyadmin
-    image: phpmyadmin:5.1.1
+    container_name: img_downloader_phpmyadmin
+    image: phpmyadmin:latest
     # ports:
     #   - "3306:3306"
     # настройки БД
@@ -39,11 +61,11 @@ services:
       PMA_HOST: 172.2.1.2
       PMA_PORT: 3306
     networks:
-      mynet123:
+      img_downloader:
         ipv4_address: 172.2.1.3
 
   postgres:
-    container_name: postgres_container
+    container_name: img_downloader_postgres
     image: postgres
     environment:
       POSTGRES_USER: postgres
@@ -54,13 +76,13 @@ services:
     ports:
       - "5432:5432"
     networks:
-      mynet123:
+      img_downloader:
         ipv4_address: 172.2.1.4
 
   pgadmin:
     tty: false
     # restart: always
-    container_name: img_uploader_pgadmin
+    container_name: img_downloader_pgadmin
     image: dpage/pgadmin4
     # ports:
     #   - "3306:3306"
@@ -74,7 +96,7 @@ services:
     volumes:
       - ./data/pgadmin4:/var/lib/pgadmin
     networks:
-      mynet123:
+      img_downloader:
         ipv4_address: 172.2.1.5
   
   
@@ -82,7 +104,7 @@ services:
 # создание сети
 networks:
   # название сети
-  mynet123:
+  img_downloader:
     driver: bridge #драйвер
     ipam:
       driver: default
