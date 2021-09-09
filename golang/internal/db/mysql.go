@@ -34,3 +34,12 @@ func (c *con) FreeUrl() (*Url, error) {
 
 	return r, nil
 }
+
+func (c *con) AddNewUrl(url string) error {
+	tx := c.con.Table("url").Create(&Url{Url: "jkfkjdskfjkdsjfkj", ContentType: "image/jpeg"})
+	if tx.Error != nil {
+		return tx.Error
+	}
+
+	return nil
+}

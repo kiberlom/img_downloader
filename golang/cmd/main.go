@@ -70,6 +70,11 @@ func main() {
 
 	fmt.Printf("%+v", r)
 
+	err = con.AddNewUrl("jkjkfjskdfjk")
+	if err != nil {
+		log.Fatalln(err)
+	}
+
 	// for {
 	// 	time.Sleep(3 * time.Second)
 	// 	test, err := con.Ping()
