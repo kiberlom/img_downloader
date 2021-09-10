@@ -7,13 +7,13 @@ import (
 	"time"
 )
 
-type req struct {
+type Req struct {
 	Body        []byte
 	CodeRequest int
 	ContentType string
 }
 
-func clientGet(url string) (*req, error) {
+func clientGet(url string) (*Req, error) {
 	client := http.Client{}
 
 	transport := http.Transport{ResponseHeaderTimeout: 5 * time.Second}
@@ -38,7 +38,7 @@ func clientGet(url string) (*req, error) {
 		return nil, err
 	}
 
-	return &req{
+	return &Req{
 		Body:        b,
 		ContentType: resp.Header.Get("Content-type"),
 		CodeRequest: resp.StatusCode}, nil
@@ -62,18 +62,14 @@ func GetImage(url string) (*[]byte, error) {
 }
 
 // получение html страницы
-func GetHtml(url string) (string, error) {
+func GetHtml(url string) (*Req, error) {
 
 	r, err := clientGet(url)
 	if err != nil {
-		return "", err
+		return nil, err
 	}
 
-	if r.CodeRequest == http.StatusOK {
-		s := string(r.Body)
-		return s, nil
-	}
-
-	return "", fmt.Errorf("err status request: %d", r.CodeRequest)
+	// s := string(r.Body)
+	return &Req{Body: r.Body, ContentType: r.ContentType, CodeRequest: r.CodeRequest}, nil
 
 }

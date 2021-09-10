@@ -60,7 +60,7 @@ func (c *con) FreeUrlAll() (*[]Url, error) {
 }
 
 func (c *con) AddNewUrl(url string) error {
-	tx := c.con.Table("url").Create(&Url{Url: "jkfkjdskfjkdsjfkj", ContentType: "image/jpeg"})
+	tx := c.con.Table("url").Create(&Url{Url: url})
 	if tx.Error != nil {
 		return tx.Error
 	}
