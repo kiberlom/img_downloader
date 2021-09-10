@@ -13,7 +13,9 @@ import (
 type DB interface {
 	Ping() (bool, error)
 	FreeUrl() (*Url, error)
+	FreeUrlAll() (*[]Url, error)
 	AddNewUrl(string) error
+	UpdateUrlVisit(*UpdateUrl) error
 }
 
 func createDSN(user, pass, ip, port, db string) string {

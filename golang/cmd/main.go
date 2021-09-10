@@ -70,11 +70,24 @@ func main() {
 
 	fmt.Printf("%+v", r)
 
+	g, err := con.FreeUrlAll()
+	if err != nil {
+		log.Fatalln(err)
+	}
+
+	fmt.Printf("%+v", g)
+
 	err = con.AddNewUrl("jkjkfjskdfjk")
 	if err != nil {
 		log.Fatalln(err)
 	}
 
+	timeReqest := time.Now().UTC().Add(time.Hour * time.Duration(4))
+
+	err = con.UpdateUrlVisit(&db.UpdateUrl{ID: 8, ContentType: "img/wbac", CodeResponse: 200, VisitDate: timeReqest})
+	if err != nil {
+		log.Fatalln(err)
+	}
 	// for {
 	// 	time.Sleep(3 * time.Second)
 	// 	test, err := con.Ping()

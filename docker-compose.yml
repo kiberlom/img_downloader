@@ -83,7 +83,7 @@ services:
     tty: false
     # restart: always
     container_name: img_downloader_pgadmin
-    image: dpage/pgadmin4
+    image: dpage/pgadmin4:latest
     # ports:
     #   - "3306:3306"
     # настройки БД
