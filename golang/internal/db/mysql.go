@@ -39,6 +39,15 @@ func (c *con) Ping() (bool, error) {
 	return true, nil
 }
 
+func (c *con) FindUrl(u string) (bool, error) {
+	tx := c.con.Table("url").Where("url = ?", u).Find(&Url{})
+	if tx.Error != nil {
+		return false, tx.Error
+	}
+
+	return tx.RowsAffected > 0, nil
+}
+
 func (c *con) FreeUrl() (*Url, error) {
 	r := new(Url)
 	tx := c.con.Table("url").Where("visit IS NULL").First(r)
