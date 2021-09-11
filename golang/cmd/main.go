@@ -7,9 +7,12 @@ import (
 	"github.com/kiberlom/img_downloader/internal/background"
 	"github.com/kiberlom/img_downloader/internal/config"
 	"github.com/kiberlom/img_downloader/internal/db"
+	"github.com/kiberlom/img_downloader/internal/shutdown"
 )
 
 func main() {
+
+	sh := shutdown.NewShutdown()
 
 	cnf := config.NewConfig()
 
@@ -19,10 +22,18 @@ func main() {
 	}
 
 	// запуск паука
-	wg := &sync.WaitGroup{}
-	wg.Add(1)
-	background.SpiderUrl(con, wg)
+	wgService := &sync.WaitGroup{}
 
-	wg.Wait()
+	wgService.Add(1)
+
+	go background.SpiderUrl(&background.ConfSpider{
+		Shd: sh,
+		WG:  wgService,
+		Con: con,
+	})
+
+	wgService.Wait()
+
+	log.Println("Работа программы завершенна корректно")
 
 }

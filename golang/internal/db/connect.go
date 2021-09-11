@@ -16,7 +16,13 @@ type DB interface {
 	FreeUrlAll() (*[]Url, error)
 	AddNewUrl(string) error
 	UpdateUrlVisit(*UpdateUrl) error
+	UpdateUrlStatus(int) error
 	FindUrl(string) (bool, error)
+	ResetStatisInProgress() error
+
+	TransStart() DB
+	TransError()
+	TransCommit()
 }
 
 func createDSN(user, pass, ip, port, db string) string {

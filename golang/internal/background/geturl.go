@@ -1,6 +1,7 @@
 package background
 
 import (
+	"context"
 	"fmt"
 	"log"
 	"sync"
@@ -11,13 +12,16 @@ import (
 	"github.com/kiberlom/img_downloader/internal/parslink"
 )
 
-func start(con db.DB) error {
+type ConfSpider struct {
+	Shd context.Context
+	WG  *sync.WaitGroup
+	Con db.DB
+}
+
+func spider(con db.DB, url newUrlVisit) error {
 
 	// получем не обработанную страницу
-	url, err := con.FreeUrl()
-	if err != nil {
-		return fmt.Errorf("Ошибка получения URL из бд")
-	}
+
 	fmt.Println("Обрабатывается: ", url.Url)
 
 	// получим результат запроса
@@ -25,7 +29,7 @@ func start(con db.DB) error {
 	if err != nil {
 		log.Printf("Ошибка получения html (%s): %v\n", url.Url, err)
 		// обновляем статус страницы запроса
-		if err := con.UpdateUrlVisit(&db.UpdateUrl{ID: url.ID, VisitDate: time.Now().UTC().Add(time.Hour * time.Duration(4))}); err != nil {
+		if err := con.UpdateUrlVisit(&db.UpdateUrl{ID: url.IDDB, VisitDate: time.Now().UTC().Add(time.Hour * time.Duration(4))}); err != nil {
 			log.Panicln("Не удалось обновить данные об обработанной HTML страницы: ", err)
 		}
 		return fmt.Errorf("Ошибка получения html (%s): %v\n", url.Url, err)
@@ -49,7 +53,7 @@ func start(con db.DB) error {
 		}
 
 		if ex {
-			log.Println("Такой url уже есть в БД: ", v)
+			// log.Println("Такой url уже есть в БД: ", v)
 			duble++
 			continue
 		}
@@ -64,7 +68,7 @@ func start(con db.DB) error {
 
 	// обновляем статус страницы запроса
 	if err := con.UpdateUrlVisit(&db.UpdateUrl{
-		ID:           url.ID,
+		ID:           url.IDDB,
 		ContentType:  html.ContentType,
 		CodeResponse: html.CodeRequest,
 		VisitDate:    time.Now().UTC().Add(time.Hour * time.Duration(4)),
@@ -77,12 +81,52 @@ func start(con db.DB) error {
 
 }
 
-func SpiderUrl(con db.DB, wg *sync.WaitGroup) {
+func startSpider(ctx context.Context, urls chan newUrlVisit, wg *sync.WaitGroup, con db.DB) {
 
 	defer wg.Done()
+
 	for {
-		time.Sleep(2 * time.Second)
-		start(con)
+
+		select {
+		case <-ctx.Done():
+			return
+		case <-time.After(2 * time.Second):
+			u, ok := <-urls
+			if ok {
+				if err := spider(con, u); err != nil {
+					log.Println(err)
+				}
+				break
+			}
+			return
+		}
+	}
+}
+
+func SpiderUrl(c *ConfSpider) {
+	defer c.WG.Done()
+
+	wg := &sync.WaitGroup{}
+	ctx, cancel := context.WithCancel(context.Background())
+
+	go func() {
+		<-c.Shd.Done()
+		cancel()
+	}()
+
+	wg.Add(1)
+	urls := newUrlNotVisit(ctx, c.Con, wg)
+
+	for i := 0; i < 10; i++ {
+		wg.Add(1)
+		go startSpider(ctx, urls, wg, c.Con)
 	}
 
+	wg.Wait()
+
+	if err := c.Con.ResetStatisInProgress(); err != nil {
+		fmt.Println("Ошибка, не удалось сбросить статус inProgress: ", err)
+	}
+
+	log.Println("Работа сервиса SpiderUrl завершена")
 }
