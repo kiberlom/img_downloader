@@ -26,7 +26,13 @@ func main() {
 
 	wgService.Add(1)
 
-	go background.SpiderUrl(&background.ConfSpider{
+	go background.SpiderUrl(&background.ConfBackService{
+		Shd: sh,
+		WG:  wgService,
+		Con: con,
+	})
+
+	go background.HostParse(&background.ConfBackService{
 		Shd: sh,
 		WG:  wgService,
 		Con: con,

@@ -20,6 +20,10 @@ type DB interface {
 	FindUrl(string) (bool, error)
 	ResetStatisInProgress() error
 
+	GetUrlLimitOffset(int, int) (*[]Url, error)
+	HostCheck(string) (bool, error)
+	HostAdd(string) error
+
 	TransStart() DB
 	TransError()
 	TransCommit()

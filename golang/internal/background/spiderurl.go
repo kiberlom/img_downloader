@@ -12,13 +12,13 @@ import (
 	"github.com/kiberlom/img_downloader/internal/parslink"
 )
 
-type ConfSpider struct {
+type ConfBackService struct {
 	Shd context.Context
 	WG  *sync.WaitGroup
 	Con db.DB
 }
 
-func spider(con db.DB, url newUrlVisit) error {
+func spider(ctx context.Context, con db.DB, url newUrlVisit) error {
 
 	// получем не обработанную страницу
 
@@ -44,30 +44,39 @@ func spider(con db.DB, url newUrlVisit) error {
 	var duble int
 	var unique int
 	// добавляем новый url в базу
+
+	tc := con.TransStart()
+
 	for _, v := range links {
+		select {
+		case <-ctx.Done():
+			tc.TransError()
+			fmt.Println("Принудительное завершение")
+			return nil
+		default:
+			// проверим url в БД
+			ex, err := tc.FindUrl(v)
+			if err != nil {
+				log.Println("Ошибка проверки в БД повторный url: ", v)
+			}
 
-		// проверим url в БД
-		ex, err := con.FindUrl(v)
-		if err != nil {
-			log.Println("Ошибка проверки в БД повторный url: ", v)
+			if ex {
+				// log.Println("Такой url уже есть в БД: ", v)
+				duble++
+				continue
+			}
+
+			if err := tc.AddNewUrl(v); err != nil {
+				log.Println("Ошибка в БД не добавленн: ", v)
+			}
+
+			unique++
 		}
-
-		if ex {
-			// log.Println("Такой url уже есть в БД: ", v)
-			duble++
-			continue
-		}
-
-		if err := con.AddNewUrl(v); err != nil {
-			log.Println("Ошибка в БД не добавленн: ", v)
-		}
-
-		unique++
 
 	}
 
 	// обновляем статус страницы запроса
-	if err := con.UpdateUrlVisit(&db.UpdateUrl{
+	if err := tc.UpdateUrlVisit(&db.UpdateUrl{
 		ID:           url.IDDB,
 		ContentType:  html.ContentType,
 		CodeResponse: html.CodeRequest,
@@ -76,12 +85,14 @@ func spider(con db.DB, url newUrlVisit) error {
 		log.Println("Не удалось обновить данные об обработанной HTML страницы: ", err)
 	}
 
+	tc.TransCommit()
+
 	fmt.Printf("завершенно: найденно Всего: %d Уникальных: %d Дубликатов: %d\n", duble+unique, unique, duble)
 	return nil
 
 }
 
-func startSpider(ctx context.Context, urls chan newUrlVisit, wg *sync.WaitGroup, con db.DB) {
+func startSpider(ctx context.Context, i int, urls chan newUrlVisit, wg *sync.WaitGroup, con db.DB) {
 
 	defer wg.Done()
 
@@ -90,10 +101,10 @@ func startSpider(ctx context.Context, urls chan newUrlVisit, wg *sync.WaitGroup,
 		select {
 		case <-ctx.Done():
 			return
-		case <-time.After(2 * time.Second):
+		case <-time.After(2 * time.Millisecond):
 			u, ok := <-urls
 			if ok {
-				if err := spider(con, u); err != nil {
+				if err := spider(ctx, con, u); err != nil {
 					log.Println(err)
 				}
 				break
@@ -103,7 +114,7 @@ func startSpider(ctx context.Context, urls chan newUrlVisit, wg *sync.WaitGroup,
 	}
 }
 
-func SpiderUrl(c *ConfSpider) {
+func SpiderUrl(c *ConfBackService) {
 	defer c.WG.Done()
 
 	wg := &sync.WaitGroup{}
@@ -111,6 +122,7 @@ func SpiderUrl(c *ConfSpider) {
 
 	go func() {
 		<-c.Shd.Done()
+		fmt.Println("Command to stop")
 		cancel()
 	}()
 
@@ -119,7 +131,7 @@ func SpiderUrl(c *ConfSpider) {
 
 	for i := 0; i < 10; i++ {
 		wg.Add(1)
-		go startSpider(ctx, urls, wg, c.Con)
+		go startSpider(ctx, i, urls, wg, c.Con)
 	}
 
 	wg.Wait()

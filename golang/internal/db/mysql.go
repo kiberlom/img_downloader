@@ -1,6 +1,7 @@
 package db
 
 import (
+	"errors"
 	"fmt"
 	"time"
 
@@ -18,6 +19,11 @@ type Url struct {
 	CodeResponse *int    `gorm:"code_response"`
 	Visit        *string `gorm:"visit"`
 	Status       *string `gorm:"status"`
+}
+
+type Host struct {
+	ID   int    `gorm:"id"`
+	Name string `gorm:"name"`
 }
 
 type UpdateUrl struct {
@@ -72,6 +78,10 @@ func (c *con) FreeUrl() (*Url, error) {
 		return nil, tx.Error
 	}
 
+	if errors.Is(tx.Error, gorm.ErrRecordNotFound) {
+		return nil, fmt.Errorf("record not found")
+	}
+
 	return r, nil
 }
 
@@ -124,6 +134,34 @@ func (c *con) UpdateUrlStatus(id int) error {
 
 func (c *con) ResetStatisInProgress() error {
 	tx := c.con.Table("url").Model(&Url{}).Where("status = 'inProgres'").Updates(map[string]interface{}{"status": nil})
+	if tx.Error != nil {
+		return tx.Error
+	}
+
+	return nil
+}
+
+func (c *con) GetUrlLimitOffset(limit, offset int) (*[]Url, error) {
+	r := new([]Url)
+	tx := c.con.Table("url").Where("visit IS NOT NULL").Limit(limit).Offset(offset).Find(r)
+	if tx.Error != nil {
+		return nil, tx.Error
+	}
+
+	return r, nil
+}
+
+func (c *con) HostCheck(name string) (bool, error) {
+	tx := c.con.Table("hosts").Where("name = ?", name).Find(&Host{})
+	if tx.Error != nil {
+		return false, tx.Error
+	}
+
+	return tx.RowsAffected > 0, nil
+}
+
+func (c *con) HostAdd(h string) error {
+	tx := c.con.Table("hosts").Create(&Host{Name: h})
 	if tx.Error != nil {
 		return tx.Error
 	}

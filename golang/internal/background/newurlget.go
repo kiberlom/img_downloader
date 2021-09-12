@@ -2,7 +2,6 @@ package background
 
 import (
 	"context"
-	"fmt"
 	"log"
 	"sync"
 	"time"
@@ -29,9 +28,9 @@ func newUrlNotVisit(ctx context.Context, con db.DB, wg *sync.WaitGroup) chan new
 		}()
 
 		for {
+			time.Sleep(500 * time.Millisecond)
 			select {
 			case <-ctx.Done():
-				fmt.Println("-----------------------------------------------")
 				return
 			default:
 				getNewUrl(con, ch)

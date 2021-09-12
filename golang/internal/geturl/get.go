@@ -14,9 +14,13 @@ type Req struct {
 }
 
 func clientGet(url string) (*Req, error) {
-	client := http.Client{}
+	client := http.Client{
+		// CheckRedirect: func(req *http.Request, via []*http.Request) error {
+		// 	return errors.New("Redirect")
+		// },
+	}
 
-	transport := http.Transport{ResponseHeaderTimeout: 5 * time.Second}
+	transport := http.Transport{ResponseHeaderTimeout: 2 * time.Second}
 
 	client.Transport = &transport
 
