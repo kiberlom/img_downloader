@@ -7,6 +7,7 @@ import (
 	"github.com/kiberlom/img_downloader/internal/background"
 	"github.com/kiberlom/img_downloader/internal/config"
 	"github.com/kiberlom/img_downloader/internal/db"
+	"github.com/kiberlom/img_downloader/internal/logger"
 	"github.com/kiberlom/img_downloader/internal/shutdown"
 )
 
@@ -15,6 +16,8 @@ func main() {
 	sh := shutdown.NewShutdown()
 
 	cnf := config.NewConfig()
+
+	logf := logger.NewLogger()
 
 	con, err := db.NewConnect(cnf)
 	if err != nil {
@@ -30,6 +33,7 @@ func main() {
 		Shd: sh,
 		WG:  wgService,
 		Con: con,
+		Log: logf,
 	})
 
 	go background.HostParse(&background.ConfBackService{
@@ -40,6 +44,6 @@ func main() {
 
 	wgService.Wait()
 
-	log.Println("Работа программы завершенна корректно")
+	log.Println("Работа программы завершена корректно")
 
 }

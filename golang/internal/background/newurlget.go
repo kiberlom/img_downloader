@@ -9,7 +9,7 @@ import (
 	"github.com/kiberlom/img_downloader/internal/db"
 )
 
-// сервис берет данные о новых не проверенных адрессах
+// сервис берет данные о новых не проверенных адресах
 
 type newUrlVisit struct {
 	IDDB int
@@ -18,7 +18,7 @@ type newUrlVisit struct {
 
 func newUrlNotVisit(ctx context.Context, con db.DB, wg *sync.WaitGroup) chan newUrlVisit {
 
-	ch := make(chan newUrlVisit, 10)
+	ch := make(chan newUrlVisit, 100)
 
 	go func() {
 
@@ -28,7 +28,7 @@ func newUrlNotVisit(ctx context.Context, con db.DB, wg *sync.WaitGroup) chan new
 		}()
 
 		for {
-			time.Sleep(500 * time.Millisecond)
+			//time.Sleep(500 * time.Millisecond)
 			select {
 			case <-ctx.Done():
 				return

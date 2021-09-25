@@ -111,7 +111,6 @@ func (c *con) AddNewUrl(url string) error {
 func (c *con) UpdateUrlVisit(u *UpdateUrl) error {
 
 	date := u.VisitDate.Format("2006-01-02 15:04:05")
-	fmt.Println(date)
 
 	s := "visit"
 	tx := c.con.Table("url").Model(&Url{}).Where("id = ?", u.ID).Updates(Url{ContentType: u.ContentType, Visit: &date, CodeResponse: &u.CodeResponse, Status: &s})
