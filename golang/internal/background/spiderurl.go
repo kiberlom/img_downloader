@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"log"
+	"net/url"
 	"sync"
 	"time"
 
@@ -20,21 +21,27 @@ type ConfBackService struct {
 	Log *logrus.Logger
 }
 
-func spiderGet(ctx context.Context, con db.DB, url newUrlVisit, index int) error {
+func spiderGet(ctx context.Context, con db.DB, urlHost newUrlVisit, index int) error {
+
+	// get host url
+	u, err := url.Parse(urlHost.Url)
+	if err != nil {
+		log.Println("ERROR PARSE URL")
+	}
 
 	// получим результат запроса
-	html, err := geturl.GetHtml(url.Url)
+	html, err := geturl.GetHtml(urlHost.Url)
 	if err != nil {
-		log.Printf("Ошибка получения html (%s): %v\n", url.Url, err)
+		log.Printf("Ошибка получения html (%s): %v\n", urlHost.Url, err)
 		// обновляем статус страницы запроса
-		if err := con.UpdateUrlVisit(&db.UpdateUrl{ID: url.IDDB, VisitDate: time.Now().UTC().Add(time.Hour * time.Duration(4))}); err != nil {
+		if err := con.UpdateUrlVisit(&db.UpdateUrl{ID: urlHost.IDDB, VisitDate: time.Now().UTC().Add(time.Hour * time.Duration(4))}); err != nil {
 			log.Panicln("Не удалось обновить данные об обработанной HTML страницы: ", err)
 		}
-		return fmt.Errorf("Ошибка получения html (%s): %v\n", url.Url, err)
+		return fmt.Errorf("Ошибка получения html (%s): %v\n", urlHost.Url, err)
 	}
 
 	// парсим страницу на url
-	links, err := parslink.GetAllUrl(string(html.Body))
+	links, err := parslink.ParsAllUrlInPage(string(html.Body))
 	if err != nil {
 		return fmt.Errorf("Ошибка парсинга теля html страницы")
 	}
@@ -64,7 +71,7 @@ func spiderGet(ctx context.Context, con db.DB, url newUrlVisit, index int) error
 				continue
 			}
 
-			if err := tc.AddNewUrl(v); err != nil {
+			if err := tc.AddNewUrl(u.Host, v); err != nil {
 				log.Println("Ошибка в БД не добавлен: ", v)
 			}
 
@@ -75,7 +82,7 @@ func spiderGet(ctx context.Context, con db.DB, url newUrlVisit, index int) error
 
 	// обновляем статус страницы запроса
 	if err := tc.UpdateUrlVisit(&db.UpdateUrl{
-		ID:           url.IDDB,
+		ID:           urlHost.IDDB,
 		ContentType:  html.ContentType,
 		CodeResponse: html.CodeRequest,
 		VisitDate:    time.Now().UTC().Add(time.Hour * time.Duration(4)),
@@ -85,7 +92,7 @@ func spiderGet(ctx context.Context, con db.DB, url newUrlVisit, index int) error
 
 	tc.TransCommit()
 	fmt.Println("--------------[ ", index, " ]-----------------")
-	fmt.Println("Обрабатывается: ", url.Url)
+	fmt.Println("Обрабатывается: ", urlHost.Url)
 	fmt.Printf("завершено: найдено Всего: %d Уникальных: %d Дубликатов: %d\n", double+unique, unique, double)
 	return nil
 
@@ -114,6 +121,8 @@ func startSpider(ctx context.Context, i int, urls chan newUrlVisit, wg *sync.Wai
 }
 
 func SpiderUrl(c *ConfBackService) {
+
+	log.Println("SPIDER start ...")
 	defer c.WG.Done()
 
 	wg := &sync.WaitGroup{}
@@ -128,7 +137,7 @@ func SpiderUrl(c *ConfBackService) {
 	wg.Add(1)
 	urls := newUrlNotVisit(ctx, c.Con, wg)
 
-	for i := 1; i < 3; i++ {
+	for i := 1; i < 1; i++ {
 		wg.Add(1)
 		go startSpider(ctx, i, urls, wg, c.Con, i)
 	}

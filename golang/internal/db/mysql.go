@@ -14,6 +14,7 @@ type con struct {
 
 type Url struct {
 	ID           int     `gorm:"id"`
+	Host         string  `gorm:"host"`
 	Url          string  `gorm:"url"`
 	ContentType  string  `gorm:"content_type"`
 	CodeResponse *int    `gorm:"code_response"`
@@ -35,9 +36,7 @@ type UpdateUrl struct {
 
 // транзакции
 func (c *con) TransStart() DB {
-	return &con{
-		con: c.con.Begin(),
-	}
+	return &con{con: c.con.Begin()}
 }
 
 func (c *con) TransError() {
@@ -95,8 +94,8 @@ func (c *con) FreeUrlAll() (*[]Url, error) {
 	return r, nil
 }
 
-func (c *con) AddNewUrl(url string) error {
-	tx := c.con.Table("url").Create(&Url{Url: url})
+func (c *con) AddNewUrl(host, url string) error {
+	tx := c.con.Table("url").Create(&Url{Host: host, Url: url})
 	if tx.Error != nil {
 		return tx.Error
 	}

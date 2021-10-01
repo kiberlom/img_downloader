@@ -4,7 +4,7 @@ import (
 	"regexp"
 )
 
-func GetAllUrl(s string) ([]string, error) {
+func ParsAllUrlInPage(s string) ([]string, error) {
 
 	rxg, err := regexp.Compile(`(http|ftp|https)://([\w_-]+(?:(?:\.[\w_-]+)+))([\w.,@?^=%&:/~+#-]*[\w@?^=%&/~+#-])?`)
 	if err != nil {

@@ -14,7 +14,7 @@ type DB interface {
 	Ping() (bool, error)
 	FreeUrl() (*Url, error)
 	FreeUrlAll() (*[]Url, error)
-	AddNewUrl(string) error
+	AddNewUrl(string, string) error
 	UpdateUrlVisit(*UpdateUrl) error
 	UpdateUrlStatus(int) error
 	FindUrl(string) (bool, error)
